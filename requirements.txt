@@ -44,7 +44,6 @@ PyJWT==2.3.0
 PyMySQL==1.0.2
 pynput==1.7.6
 pyparsing==3.0.9
-pypiwin32==223
 pytest==7.1.1
 python-dateutil==2.8.2
 python-dotenv==0.20.0
