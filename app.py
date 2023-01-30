@@ -28,7 +28,7 @@ from datetime import datetime, date
 
 app = Flask(__name__)
 # app = application
-CORS(app)
+# CORS(app)
 
 
 HOST = os.getenv('HOST')
