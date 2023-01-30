@@ -1,0 +1,11 @@
+.env
+.venv
+env/
+/node_modules
+/Lib
+/f1Fantasy
+/cache
+README.txt
+application-old.py
+package-lock.json
+package.json
