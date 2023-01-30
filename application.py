@@ -23,7 +23,7 @@ import os
 import pymysql
 from dotenv import load_dotenv
 import secrets
-# import ergast_py
+import ergast_py
 from datetime import datetime, date
 
 application = Flask(__name__)
@@ -60,124 +60,124 @@ def get_image():
 
 @app.route("/drivers")
 
-def drivers():
-    fastf1.Cache.enable_cache('./cache')
-
-    abu_dhabi_race = fastf1.get_session(2022, 'Australia', 'R')
-
-    abu_dhabi_race.load()
-
-    abu_dhabi_race.results.Q1 = abu_dhabi_race.results.Q1.astype(object).where(abu_dhabi_race.results.Q1.notnull(), None)
-    abu_dhabi_race.results.Q2 = abu_dhabi_race.results.Q2.astype(object).where(abu_dhabi_race.results.Q2.notnull(), None)
-    abu_dhabi_race.results.Q3 = abu_dhabi_race.results.Q3.astype(object).where(abu_dhabi_race.results.Q3.notnull(), None)
-    abu_dhabi_race.results.Time = None
-
-    a_dictionary = {}
-    
-    for title in abu_dhabi_race.results.to_dict():
-        if title!="DriverNumber":
-            for driverNumber in abu_dhabi_race.results["DriverNumber"].tolist():
-                if driverNumber not in a_dictionary:
-                    a_dictionary[driverNumber] = [str(abu_dhabi_race.results[title][driverNumber])]
-                else:
-                    a_dictionary[driverNumber] += [str(abu_dhabi_race.results[title][driverNumber])]
-
-    return jsonify(result= [abu_dhabi_race.results.to_dict()])
 # def drivers():
-#     e = ergast_py.Ergast()
-#     standings = []
-#     race_results = e.season(2022).get_driver_standing()
-#     for i in race_results.driver_standings:
-#         standings.append([i.position, str(i.driver.given_name) + " " + str(i.driver.family_name), i.constructors[0].name, int(i.points)])
+#     fastf1.Cache.enable_cache('./cache')
 
-#     return jsonify(result= standings)
+#     abu_dhabi_race = fastf1.get_session(2022, 'Australia', 'R')
+
+#     abu_dhabi_race.load()
+
+#     abu_dhabi_race.results.Q1 = abu_dhabi_race.results.Q1.astype(object).where(abu_dhabi_race.results.Q1.notnull(), None)
+#     abu_dhabi_race.results.Q2 = abu_dhabi_race.results.Q2.astype(object).where(abu_dhabi_race.results.Q2.notnull(), None)
+#     abu_dhabi_race.results.Q3 = abu_dhabi_race.results.Q3.astype(object).where(abu_dhabi_race.results.Q3.notnull(), None)
+#     abu_dhabi_race.results.Time = None
+
+#     a_dictionary = {}
+    
+#     for title in abu_dhabi_race.results.to_dict():
+#         if title!="DriverNumber":
+#             for driverNumber in abu_dhabi_race.results["DriverNumber"].tolist():
+#                 if driverNumber not in a_dictionary:
+#                     a_dictionary[driverNumber] = [str(abu_dhabi_race.results[title][driverNumber])]
+#                 else:
+#                     a_dictionary[driverNumber] += [str(abu_dhabi_race.results[title][driverNumber])]
+
+#     return jsonify(result= [abu_dhabi_race.results.to_dict()])
+def drivers():
+    e = ergast_py.Ergast()
+    standings = []
+    race_results = e.season(2022).get_driver_standing()
+    for i in race_results.driver_standings:
+        standings.append([i.position, str(i.driver.given_name) + " " + str(i.driver.family_name), i.constructors[0].name, int(i.points)])
+
+    return jsonify(result= standings)
  
 @app.route('/getRaceResults', methods = ['GET', 'POST'])
-def getRaceResults():
-    
-    fastf1.Cache.enable_cache('./cache')
-    data = request.get_json()
-
-    abu_dhabi_race = fastf1.get_session(int(data["year"]), data["race"], 'R')
-
-    abu_dhabi_race.load()
-    
-    abu_dhabi_race.results.Q1 = abu_dhabi_race.results.Q1.astype(object).where(abu_dhabi_race.results.Q1.notnull(), None)
-    abu_dhabi_race.results.Q2 = abu_dhabi_race.results.Q2.astype(object).where(abu_dhabi_race.results.Q2.notnull(), None)
-    abu_dhabi_race.results.Q3 = abu_dhabi_race.results.Q3.astype(object).where(abu_dhabi_race.results.Q3.notnull(), None)
-    
-
-    times = {}
-    for driver in abu_dhabi_race.results["DriverNumber"]: 
-        if (abu_dhabi_race.results.Time[driver]!=abu_dhabi_race.results.Time[0]):
-            if len(str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")) == 3:
-                if str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[1] == "00":
-                    times[driver] = "+"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[2]+"s"
-                else:
-                    times[driver] = "+"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[1]+":"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[2]
-            else: 
-                times[driver] = abu_dhabi_race.results.Status[driver]
-        else:
-            times[driver] = str(abu_dhabi_race.results.Time[driver]).split(" ")[2][:-3]
-
-    raceResults = abu_dhabi_race.results.to_dict()
-    raceResults["Time"] = times
-    
-    swapedKeyVal = dict(zip(raceResults["Position"].values(), raceResults["Position"].keys()))
-    for key in list(swapedKeyVal.keys()):
-        swapedKeyVal[str(key).replace(".0", "")] = swapedKeyVal.pop(key)
-
-    print([raceResults])
-    print(swapedKeyVal)
-    
-    return jsonify(result = [raceResults], position = swapedKeyVal)
-
 # def getRaceResults():
+    
+#     fastf1.Cache.enable_cache('./cache')
 #     data = request.get_json()
-#     e = ergast_py.Ergast()
-#     race_results = e.season(int(data["year"])).round(int(data["race"])).get_result().results
 
-#     results = []
-#     poleTime = race_results[0].time
-#     for result in race_results:     
-#         time = ""
-#         if result.position == 1:
-#             time = "1:"+ poleTime.strftime("%M")+":"+poleTime.strftime("%S")+":"+poleTime.strftime("%f")[:3]
-#         elif result.time == None:
-#             time = e.driver(result.driver.driver_id).status(str(result.status)).get_status().status
+#     abu_dhabi_race = fastf1.get_session(int(data["year"]), data["race"], 'R')
+
+#     abu_dhabi_race.load()
+    
+#     abu_dhabi_race.results.Q1 = abu_dhabi_race.results.Q1.astype(object).where(abu_dhabi_race.results.Q1.notnull(), None)
+#     abu_dhabi_race.results.Q2 = abu_dhabi_race.results.Q2.astype(object).where(abu_dhabi_race.results.Q2.notnull(), None)
+#     abu_dhabi_race.results.Q3 = abu_dhabi_race.results.Q3.astype(object).where(abu_dhabi_race.results.Q3.notnull(), None)
+    
+
+#     times = {}
+#     for driver in abu_dhabi_race.results["DriverNumber"]: 
+#         if (abu_dhabi_race.results.Time[driver]!=abu_dhabi_race.results.Time[0]):
+#             if len(str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")) == 3:
+#                 if str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[1] == "00":
+#                     times[driver] = "+"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[2]+"s"
+#                 else:
+#                     times[driver] = "+"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[1]+":"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[2]
+#             else: 
+#                 times[driver] = abu_dhabi_race.results.Status[driver]
 #         else:
-#             time = "+" + str((datetime.combine(date.today(), result.time) - datetime.combine(date.today(), poleTime)).total_seconds())
-            
-#         results.append([result.position, result.number, str(result.driver.given_name) + " " + str(result.driver.family_name), result.constructor.name, time, int(result.points)])
+#             times[driver] = str(abu_dhabi_race.results.Time[driver]).split(" ")[2][:-3]
 
-#     return jsonify(result = results)
+#     raceResults = abu_dhabi_race.results.to_dict()
+#     raceResults["Time"] = times
+    
+#     swapedKeyVal = dict(zip(raceResults["Position"].values(), raceResults["Position"].keys()))
+#     for key in list(swapedKeyVal.keys()):
+#         swapedKeyVal[str(key).replace(".0", "")] = swapedKeyVal.pop(key)
+
+#     print([raceResults])
+#     print(swapedKeyVal)
+    
+#     return jsonify(result = [raceResults], position = swapedKeyVal)
+
+def getRaceResults():
+    data = request.get_json()
+    e = ergast_py.Ergast()
+    race_results = e.season(int(data["year"])).round(int(data["race"])).get_result().results
+
+    results = []
+    poleTime = race_results[0].time
+    for result in race_results:     
+        time = ""
+        if result.position == 1:
+            time = "1:"+ poleTime.strftime("%M")+":"+poleTime.strftime("%S")+":"+poleTime.strftime("%f")[:3]
+        elif result.time == None:
+            time = e.driver(result.driver.driver_id).status(str(result.status)).get_status().status
+        else:
+            time = "+" + str((datetime.combine(date.today(), result.time) - datetime.combine(date.today(), poleTime)).total_seconds())
+            
+        results.append([result.position, result.number, str(result.driver.given_name) + " " + str(result.driver.family_name), result.constructor.name, time, int(result.points)])
+
+    return jsonify(result = results)
 
 
 @app.route('/getQualiResults', methods = ['GET', 'POST'])
 def getQualiResults():
-    # data = request.get_json()
-    # e = ergast_py.Ergast()
-    # quali_results = e.season(int(data["year"])).round(int(data["race"])).get_qualifying().qualifying_results
+    data = request.get_json()
+    e = ergast_py.Ergast()
+    quali_results = e.season(int(data["year"])).round(int(data["race"])).get_qualifying().qualifying_results
 
-    # results = []
+    results = []
 
-    # for i in quali_results:
-    #     if i.qual_1 != None:
-    #         quali1 = i.qual_1.strftime("%M:%S:%f")[:-3]
-    #     else:
-    #         quali1 = None
-    #     if i.qual_2 != None:
-    #         quali2 = i.qual_2.strftime("%M:%S:%f")[:-3]
-    #     else:
-    #         quali2 = None
-    #     if i.qual_3 != None:
-    #         quali3 = i.qual_3.strftime("%M:%S:%f")[:-3]
-    #     else:
-    #         quali3 = None
+    for i in quali_results:
+        if i.qual_1 != None:
+            quali1 = i.qual_1.strftime("%M:%S:%f")[:-3]
+        else:
+            quali1 = None
+        if i.qual_2 != None:
+            quali2 = i.qual_2.strftime("%M:%S:%f")[:-3]
+        else:
+            quali2 = None
+        if i.qual_3 != None:
+            quali3 = i.qual_3.strftime("%M:%S:%f")[:-3]
+        else:
+            quali3 = None
         
-    #     results.append([i.position, str(i.driver.given_name) + " " + str(i.driver.family_name), i.constructor.name, quali1, quali2, quali3])
-    # print(results)
-    return "done"
+        results.append([i.position, str(i.driver.given_name) + " " + str(i.driver.family_name), i.constructor.name, quali1, quali2, quali3])
+    print(results)
+    return jsonify(result = results)
 
 
  
@@ -186,24 +186,24 @@ def sendYear():
     
     # fastf1.Cache.enable_cache('./cache')
 
-    # data = request.get_json()
+    data = request.get_json()
 
-    # e = ergast_py.Ergast()
-    # races = []
-    # count = 1
-    # latestRound = e.season(2022).round().get_race().round_no
+    e = ergast_py.Ergast()
+    races = []
+    count = 1
+    latestRound = e.season(2022).round().get_race().round_no
 
-    # if int(data["year"]) == -1:
-    #     race_results = e.season().get_races()
-    # else:
-    #     race_results = e.season(int(data["year"])).get_races()
+    if int(data["year"]) == -1:
+        race_results = e.season().get_races()
+    else:
+        race_results = e.season(int(data["year"])).get_races()
     
-    # for race in race_results:
-    #     if count <= latestRound:
-    #         races.append({count : race.race_name})
-    #         count += 1
+    for race in race_results:
+        if count <= latestRound:
+            races.append({count : race.race_name})
+            count += 1
 
-    return jsonify(races=2012)
+    return jsonify(races=races[::-1])
 
 @app.route('/signUp', methods = ['POST'])
 def signUp():
@@ -683,44 +683,44 @@ def joinLeague():
 
 @app.route('/getPoints', methods = ['POST'])
 def getPoints():
-    # data = request.get_json()
-    # e = ergast_py.Ergast()
-    # points = {}
-    # try:
-    #     race_results = e.season().round(int(data["race"])).get_result().results
-    #     quali_results = e.season().round(int(data["race"])).get_qualifying().qualifying_results
-    # except:
-    #     race_results = e.season().round().get_result().results
-    #     quali_results = e.season().round().get_qualifying().qualifying_results
-    # for i in race_results:
-    #     if i.constructor.name not in points.keys():
-    #         points[i.constructor.name] = int(i.points)
-    #     else:
-    #         points[i.constructor.name] += int(i.points)
+    data = request.get_json()
+    e = ergast_py.Ergast()
+    points = {}
+    try:
+        race_results = e.season().round(int(data["race"])).get_result().results
+        quali_results = e.season().round(int(data["race"])).get_qualifying().qualifying_results
+    except:
+        race_results = e.season().round().get_result().results
+        quali_results = e.season().round().get_qualifying().qualifying_results
+    for i in race_results:
+        if i.constructor.name not in points.keys():
+            points[i.constructor.name] = int(i.points)
+        else:
+            points[i.constructor.name] += int(i.points)
         
-    #     driverName = str(i.driver.given_name) + " " + str(i.driver.family_name)
-    #     points[driverName] = int(i.points)
-    #     if i.fastest_lap.rank == 1:
-    #         points[driverName] += 5
-    #     if (str(i.status)[0] == "1" and len(str(i.status))<3):
-    #         points[driverName] += 1
-    #     else:
-    #         points[driverName] -= 10
-    # for j in quali_results:
-    #     driverName = str(j.driver.given_name) + " " + str(j.driver.family_name)
-    #     if j.qual_3 != None:
-    #         points[driverName] += 3
-    #     elif j.qual_2 != None:
-    #         points[driverName] += 2
-    #     elif j.qual_1 != None:
-    #         points[driverName] += 1
-    #     else:
-    #         points[driverName] -= 5
-    #     if j.position <= 10:
-    #         points[driverName] += 11-j.position
-    # print(points)
+        driverName = str(i.driver.given_name) + " " + str(i.driver.family_name)
+        points[driverName] = int(i.points)
+        if i.fastest_lap.rank == 1:
+            points[driverName] += 5
+        if (str(i.status)[0] == "1" and len(str(i.status))<3):
+            points[driverName] += 1
+        else:
+            points[driverName] -= 10
+    for j in quali_results:
+        driverName = str(j.driver.given_name) + " " + str(j.driver.family_name)
+        if j.qual_3 != None:
+            points[driverName] += 3
+        elif j.qual_2 != None:
+            points[driverName] += 2
+        elif j.qual_1 != None:
+            points[driverName] += 1
+        else:
+            points[driverName] -= 5
+        if j.position <= 10:
+            points[driverName] += 11-j.position
+    print(points)
 
-    return jsonify(points="ASD")  
+    return jsonify(points=points)  
 
 @app.route('/getCosts', methods = ['POST'])
 def getCosts():
