@@ -28,7 +28,7 @@ from datetime import datetime, date
 
 app = Flask(__name__)
 # app = application
-# CORS(app)
+CORS(app)
 
 
 HOST = os.getenv('HOST')
@@ -59,30 +59,6 @@ def get_image():
 
 
 @app.route("/drivers")
-
-# def drivers():
-#     fastf1.Cache.enable_cache('./cache')
-
-#     abu_dhabi_race = fastf1.get_session(2022, 'Australia', 'R')
-
-#     abu_dhabi_race.load()
-
-#     abu_dhabi_race.results.Q1 = abu_dhabi_race.results.Q1.astype(object).where(abu_dhabi_race.results.Q1.notnull(), None)
-#     abu_dhabi_race.results.Q2 = abu_dhabi_race.results.Q2.astype(object).where(abu_dhabi_race.results.Q2.notnull(), None)
-#     abu_dhabi_race.results.Q3 = abu_dhabi_race.results.Q3.astype(object).where(abu_dhabi_race.results.Q3.notnull(), None)
-#     abu_dhabi_race.results.Time = None
-
-#     a_dictionary = {}
-    
-#     for title in abu_dhabi_race.results.to_dict():
-#         if title!="DriverNumber":
-#             for driverNumber in abu_dhabi_race.results["DriverNumber"].tolist():
-#                 if driverNumber not in a_dictionary:
-#                     a_dictionary[driverNumber] = [str(abu_dhabi_race.results[title][driverNumber])]
-#                 else:
-#                     a_dictionary[driverNumber] += [str(abu_dhabi_race.results[title][driverNumber])]
-
-#     return jsonify(result= [abu_dhabi_race.results.to_dict()])
 def drivers():
     e = ergast_py.Ergast()
     standings = []
@@ -93,45 +69,6 @@ def drivers():
     return jsonify(result= standings)
  
 @app.route('/getRaceResults', methods = ['GET', 'POST'])
-# def getRaceResults():
-    
-#     fastf1.Cache.enable_cache('./cache')
-#     data = request.get_json()
-
-#     abu_dhabi_race = fastf1.get_session(int(data["year"]), data["race"], 'R')
-
-#     abu_dhabi_race.load()
-    
-#     abu_dhabi_race.results.Q1 = abu_dhabi_race.results.Q1.astype(object).where(abu_dhabi_race.results.Q1.notnull(), None)
-#     abu_dhabi_race.results.Q2 = abu_dhabi_race.results.Q2.astype(object).where(abu_dhabi_race.results.Q2.notnull(), None)
-#     abu_dhabi_race.results.Q3 = abu_dhabi_race.results.Q3.astype(object).where(abu_dhabi_race.results.Q3.notnull(), None)
-    
-
-#     times = {}
-#     for driver in abu_dhabi_race.results["DriverNumber"]: 
-#         if (abu_dhabi_race.results.Time[driver]!=abu_dhabi_race.results.Time[0]):
-#             if len(str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")) == 3:
-#                 if str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[1] == "00":
-#                     times[driver] = "+"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[2]+"s"
-#                 else:
-#                     times[driver] = "+"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[1]+":"+str(abu_dhabi_race.results.Time[driver]-abu_dhabi_race.results.Time[0]).split(" ")[2][:-3].split(":")[2]
-#             else: 
-#                 times[driver] = abu_dhabi_race.results.Status[driver]
-#         else:
-#             times[driver] = str(abu_dhabi_race.results.Time[driver]).split(" ")[2][:-3]
-
-#     raceResults = abu_dhabi_race.results.to_dict()
-#     raceResults["Time"] = times
-    
-#     swapedKeyVal = dict(zip(raceResults["Position"].values(), raceResults["Position"].keys()))
-#     for key in list(swapedKeyVal.keys()):
-#         swapedKeyVal[str(key).replace(".0", "")] = swapedKeyVal.pop(key)
-
-#     print([raceResults])
-#     print(swapedKeyVal)
-    
-#     return jsonify(result = [raceResults], position = swapedKeyVal)
-
 def getRaceResults():
     data = request.get_json()
     e = ergast_py.Ergast()
@@ -349,29 +286,10 @@ def saveTeam():
         cur.execute("SELECT * FROM teams")
         teamID = cur.fetchall()[len(cur.fetchall())-1][0]
 
-# TESTING --------------------------------------------------------
-
         cur.execute("SELECT userID FROM users WHERE token = %s", (data["token"]))
         userID = cur.fetchall()[0][0]
         cur.execute("INSERT INTO league_teams (userID, leagueID, teamID) VALUES (%s, null, %s)", (userID, teamID))
         conn.commit()
-# TESTING --------------------------------------------------------
-
-        
-# TO DELETE --------------------------------------------
-        # #gets user's current list of teams
-        # cur.execute("SELECT teamID FROM users WHERE token = %s", (data["token"]))
-        # currentTeams = cur.fetchall()[0][0]
-
-        # newTeamList = str(currentTeams)+ "," + str(teamID)
-
-        # if (currentTeams)!=None:
-        #     cur.execute("UPDATE users SET teamID = %s WHERE token = %s", (newTeamList, data["token"]))
-        #     conn.commit()
-        # elif (currentTeams)==None:
-        #     cur.execute("UPDATE users SET teamID = %s WHERE token = %s", (teamID, data["token"]))
-        #     conn.commit()
-# TO DELETE --------------------------------------------
 
     elif (isTeam>0):
         
@@ -400,20 +318,6 @@ def getUsersTeams():
     cur=conn.cursor()
     
     budget = 100,000,000
-
-# DELETE ------------------------------------------
-    # # Gets list of user's teams
-    # cur.execute("SELECT teamID FROM users WHERE token = %s", (data["token"]))
-    # result=cur.fetchall()
-    # userTeams = result[0][0]
-    # newuserTeams = tuple(userTeams.split(','))
-
-    # cur.execute("SELECT * FROM teams WHERE teamID IN %s;", (newuserTeams,))
-    # # cur.execute("SELECT * FROM Table1.`teams(old)` WHERE userID = 3;")
-    
-    # result=cur.fetchall()
-    # print(result)
-# DELETE ------------------------------------------
 
     cur.execute("SELECT userID FROM users WHERE token = %s", (data["token"]))
     userID=cur.fetchall()[0][0]
@@ -475,21 +379,6 @@ def deleteTeam():
     cur.execute("DELETE FROM league_teams WHERE teamID = %s", (teamID))
     conn.commit()
 
-# Delete -------------------------------------
-    # cur.execute("SELECT teamID FROM users WHERE token = %s", (data["token"]))
-    # userTeams = cur.fetchall()[0][0]
-
-    # # removes team from list of user teams
-    # userTeams = userTeams.split(",")
-    # userTeams.remove(str(teamID))
-    # newTeamsList = ""
-    # for i in userTeams:
-    #     newTeamsList += i+","
-
-    # cur.execute("UPDATE users SET teamID = %s WHERE token = %s", (newTeamsList[:-1], data["token"]))
-    # conn.commit()
-# Delete -------------------------------------
-
     cur.execute("DELETE FROM teams WHERE teamName = %s", (data["teamName"]))
     conn.commit()
 
@@ -523,30 +412,10 @@ def createLeague():
         cur.execute("SELECT * FROM leagues")
         leagueID = cur.fetchall()[len(cur.fetchall())-1][0]
 
-# TESTING --------------------------------------------------------
-
         cur.execute("SELECT userID FROM users WHERE token = %s", (data["token"]))
         userID = cur.fetchall()[0][0]
         cur.execute("INSERT INTO league_teams (userID, leagueID, teamID) VALUES (%s, %s, null)", (userID, leagueID))
         conn.commit()
-
-# TESTING --------------------------------------------------------
-
-
-# DELETE --------------------------------------------------------
-        # #gets user's current list of leagues
-        # cur.execute("SELECT leagueID FROM users WHERE token = %s", (data["token"]))
-        # currentLeagues = cur.fetchall()[0][0]
-        # newLeagueList = str(currentLeagues)+ "," + str(leagueID)
-
-
-        # if (currentLeagues)!=None:
-        #     cur.execute("UPDATE users SET leagueID = %s WHERE token = %s", (newLeagueList, data["token"]))
-        #     conn.commit()
-        # elif (currentLeagues)==None:
-        #     cur.execute("UPDATE users SET leagueID = %s WHERE token = %s", (leagueID, data["token"]))
-        #     conn.commit()
-# DELETE --------------------------------------------------------
 
     elif (isLeague>0):
         print("already league")
@@ -578,19 +447,6 @@ def getUsersLeagues():
     cur.execute("SELECT * FROM leagues WHERE leagueID IN %s;", (userleagues,))
     result=cur.fetchall()
 
-# DELETE ------------------------------------------
-    # # Gets list of user's leagues
-    # cur.execute("SELECT leagueID FROM users WHERE token = %s", (data["token"]))
-    # result=cur.fetchall()
-    # userLeagues = result[0][0]
-    # newuserLeagues = tuple(userLeagues.split(','))
-
-
-    # cur.execute("SELECT * FROM leagues WHERE leagueID IN %s;", (newuserLeagues,))
-    
-    # result=cur.fetchall()
-# DELETE ------------------------------------------
-
     leaguesList = []
 
     for league in result:
@@ -614,21 +470,6 @@ def leaveLeague():
             )
 
     cur=conn.cursor()
-
-# DELETE ----------------------------------------------
-    # cur.execute("SELECT leagueID FROM users WHERE token = %s", (data["token"]))
-    # userLeagues = cur.fetchall()[0][0]
-
-    # # removes team from list of user teams
-    # userLeagues = userLeagues.split(",")
-    # userLeagues.remove(str(data["leagueID"]))
-    # newLeaguesList = ""
-    # for i in userLeagues:
-    #     newLeaguesList += i+","
-
-    # cur.execute("UPDATE users SET leagueID = %s WHERE token = %s", (newLeaguesList[:-1], data["token"]))
-    # conn.commit()
-# DELETE ----------------------------------------------
 
     cur.execute("DELETE FROM league_teams WHERE leagueID = %s", (data["leagueID"]))
     conn.commit()
@@ -662,19 +503,6 @@ def joinLeague():
         userID = cur.fetchall()[0][0]
         cur.execute("INSERT INTO league_teams (userID, leagueID, teamID) VALUES (%s, %s, null)", (userID, leagueID))
         conn.commit()
-
-        # #gets user's current list of leagues
-        # cur.execute("SELECT leagueID FROM users WHERE token = %s", (data["token"]))
-        # currentLeagues = cur.fetchall()[0][0]
-        # newLeagueList = str(currentLeagues)+ "," + str(leagueID)
-
-
-        # if (currentLeagues)!=None:
-        #     cur.execute("UPDATE users SET leagueID = %s WHERE token = %s", (newLeagueList, data["token"]))
-        #     conn.commit()
-        # elif (currentLeagues)==None:
-        #     cur.execute("UPDATE users SET leagueID = %s WHERE token = %s", (leagueID, data["token"]))
-        #     conn.commit()
 
     elif (league==()):
         return "There is no league"
