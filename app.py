@@ -159,6 +159,9 @@ def signUp():
 
     cur=conn.cursor()
     cur.execute("INSERT INTO users (fname, lname, email, pass) VALUES (%s, %s, %s, %s )", (data["firstName"], data["lastName"], data["email"], data["pass"]))
+    userID = cur.lastrowid
+    conn.commit()
+    cur.execute("INSERT INTO league_teams (userID, leagueID, teamID) VALUES (%s, 13, null)", (userID))
     conn.commit()
 
     return "done"
@@ -302,6 +305,10 @@ def saveTeam():
 def getUsersTeams():
 
     data = request.get_json()
+
+    data = request.get_json()
+    if data["token"] == None:
+        return jsonify(teamList=None) 
     
     load_dotenv()
 
@@ -427,7 +434,9 @@ def createLeague():
 def getUsersLeagues():
 
     data = request.get_json()
-    
+    if data["token"] == None:
+        return jsonify(leaguesList=None) 
+
     load_dotenv()
 
     conn = pymysql.connect(
