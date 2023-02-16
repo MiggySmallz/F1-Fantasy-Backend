@@ -25,6 +25,7 @@ from dotenv import load_dotenv
 import secrets
 import ergast_py
 from datetime import datetime, date
+from passlib.hash import sha256_crypt
 
 app = Flask(__name__)
 # app = application
@@ -113,7 +114,7 @@ def getQualiResults():
             quali3 = None
         
         results.append([i.position, str(i.driver.given_name) + " " + str(i.driver.family_name), i.constructor.name, quali1, quali2, quali3])
-    print(results)
+    # print(results)
     return jsonify(result = results)
 
 
@@ -156,9 +157,14 @@ def signUp():
             password = PASSWORD,
             db = DB,
             )
+    
+
+    passwrd = sha256_crypt.hash(data["pass"])
+
+
 
     cur=conn.cursor()
-    cur.execute("INSERT INTO users (fname, lname, email, pass) VALUES (%s, %s, %s, %s )", (data["firstName"], data["lastName"], data["email"], data["pass"]))
+    cur.execute("INSERT INTO users (fname, lname, email, pass) VALUES (%s, %s, %s, %s )", (data["firstName"], data["lastName"], data["email"], passwrd))
     userID = cur.lastrowid
     conn.commit()
     cur.execute("INSERT INTO league_teams (userID, leagueID, teamID) VALUES (%s, 13, null)", (userID))
@@ -182,21 +188,26 @@ def logIn():
             )
 
     cur=conn.cursor()
-    cur.execute("SELECT count(*) FROM users WHERE email = %s", (data["email"]))
+    cur.execute("SELECT userID FROM users WHERE email = %s", (data["email"]))
     result=cur.fetchone()
-    email=result[0]
-    cur.execute("SELECT count(*) FROM users WHERE pass = %s", (data["pass"]))
-    result=cur.fetchone()
-    password=result[0]
-
-    if email > 0 and password > 0:
-        token=secrets.token_urlsafe(10)
-        cur.execute("UPDATE users SET token = %s WHERE email = %s", (token, data["email"]))
-        conn.commit()
-        return jsonify(loginVerification=True, token=token)
-    else:
-        conn.commit()
+    if result==None: 
         return jsonify(loginVerification=False)
+    userID=result[0]
+    # print(userID)
+    cur.execute("SELECT pass FROM users WHERE userID = %s", (userID))
+    result=cur.fetchone()
+    passwrd=result[0]
+
+    if sha256_crypt.verify(data["pass"], passwrd) == False:
+        return jsonify(loginVerification=False)
+
+    token=secrets.token_urlsafe(10)
+    cur.execute("UPDATE users SET token = %s WHERE email = %s", (token, data["email"]))
+    conn.commit()
+    return jsonify(loginVerification=True, token=token)
+    # else:
+    #     conn.commit()
+    #     return jsonify(loginVerification=False)
 
 @app.route('/getUserName', methods = ['GET', 'POST'])
 def getUserName():
@@ -306,7 +317,6 @@ def getUsersTeams():
 
     data = request.get_json()
 
-    data = request.get_json()
     if data["token"] == None:
         return jsonify(teamList=None) 
     
@@ -362,13 +372,16 @@ def getUsersTeams():
                 teamList[teamName] = currentTeam 
                 currentTeam = []
 
-    return jsonify(teamList=teamList, budget=budget)  
+    userTeamss = list(filter(None, userTeamss))
+
+
+    return jsonify(teamList=teamList, budget=budget, teamIDs=userTeamss)  
 
 @app.route('/deleteTeam', methods = ['POST'])
 def deleteTeam():
 
     data = request.get_json()
-    
+    # print(data)
     load_dotenv()
 
     conn = pymysql.connect(
@@ -453,6 +466,7 @@ def getUsersLeagues():
     userID=cur.fetchall()[0][0]
     cur.execute("SELECT leagueID FROM league_teams WHERE userID = %s", (userID))
     userleagues = [i[0] for i in cur.fetchall()]
+    # print(userleagues)
     cur.execute("SELECT * FROM leagues WHERE leagueID IN %s;", (userleagues,))
     result=cur.fetchall()
 
@@ -555,7 +569,7 @@ def getPoints():
             points[driverName] -= 5
         if j.position <= 10:
             points[driverName] += 11-j.position
-    print(points)
+    # print(points)
 
     return jsonify(points=points)  
 
@@ -583,7 +597,7 @@ def getCosts():
     for i in constructors:
         costs[i[0]] = i[1]
 
-    print(costs)
+    # print(costs)
     return jsonify(costs=costs)  
 
 @app.route('/getLeagueInfo', methods = ['POST'])
@@ -608,32 +622,93 @@ def getLeagueInfo():
     cur.execute("SELECT userID FROM league_teams WHERE leagueID = %s", (data["leagueID"]))
     leagueMembers = [i[0] for i in cur.fetchall()]
 
-    cur.execute("SELECT fname FROM users WHERE userID IN %s", (leagueMembers,))
-    leagueMembersNames = [i[0] for i in cur.fetchall()]
+    # cur.execute("SELECT fname FROM users WHERE userID IN %s", (leagueMembers,))
+    # leagueMembersNames = [i[0] for i in cur.fetchall()]
 
     memberTeamsList = {}
-
+    # print(leagueMembers)
+    # print(leagueMembersNames)
+    
     for member in leagueMembers:
         cur.execute("SELECT teamID FROM league_teams WHERE userID = %s AND leagueID = %s",(member, data["leagueID"]))
         memberTeam = cur.fetchall()[0][0]
-        
+        # print(memberTeam)
         if memberTeam != None:
+
+            cur.execute("SELECT fname FROM users WHERE userID = %s", (member))
+            memberName = cur.fetchall()[0][0]
+
             cur.execute("SELECT slot1, slot2, slot3, slot4, slot5, slot6 FROM teams WHERE teamID = %s",(memberTeam))
             teamList = cur.fetchall()[0]
 
             cur.execute("SELECT driver, driverImg FROM drivers WHERE id IN %s",(teamList,))
 
-            memberTeamsList[leagueMembersNames[leagueMembers.index(member)]] = [{i[0]:i[1]} for i in cur.fetchall()]
+            # memberTeamsList[leagueMembersNames[leagueMembers.index(member)]] = [{i[0]:i[1]} for i in cur.fetchall()]
+            memberTeamsList[memberName] = [{i[0]:i[1]} for i in cur.fetchall()]
+            
 
             cur.execute("SELECT constructor, constructorImg FROM constructors WHERE id = %s", (teamList[5]))
             constructor = cur.fetchall()
             
             
             if constructor!=():
-                memberTeamsList[leagueMembersNames[leagueMembers.index(member)]].append({constructor[0][0]:constructor[0][1]})
+                # memberTeamsList[leagueMembersNames[leagueMembers.index(member)]].append({constructor[0][0]:constructor[0][1]})
+                memberTeamsList[memberName].append({constructor[0][0]:constructor[0][1]})
         # print(memberTeamsList)
 
-    return jsonify(memberTeamsList=memberTeamsList, leagueName=leagueName)  
+    cur.execute("SELECT userID FROM users WHERE token = %s", (data["token"]))
+    userID = cur.fetchall()[0][0]
+
+    cur.execute("SELECT fname FROM users WHERE userID = %s", (userID))
+    fname=cur.fetchall()[0][0]
+    
+    return jsonify(memberTeamsList=memberTeamsList, leagueName=leagueName, fname=fname)  
+
+@app.route('/addToLeague', methods = ['POST'])
+def addToLeague():
+    
+    load_dotenv()
+    data = request.get_json()
+    conn = pymysql.connect(
+            host= HOST, 
+            port = PORT,
+            user = USER, 
+            password = PASSWORD,
+            db = DB,
+            )
+
+    # print(data["leagueID"])
+    # print(data["token"])
+    # print(data["teamID"])
+
+    cur=conn.cursor()
+    cur.execute("SELECT userID FROM users WHERE token = %s", (data["token"]))
+    userID = cur.fetchall()[0][0]
+    cur.execute("UPDATE league_teams SET teamID = %s WHERE userID = %s and leagueID = %s", (data["teamID"], userID, data["leagueID"]))
+    conn.commit()
+
+    return jsonify(nothing="") 
+
+@app.route('/removeFromLeague', methods = ['POST'])
+def removeFromLeague():
+    
+    load_dotenv()
+    data = request.get_json()
+    conn = pymysql.connect(
+            host= HOST, 
+            port = PORT,
+            user = USER, 
+            password = PASSWORD,
+            db = DB,
+            )
+
+    cur=conn.cursor()
+    cur.execute("SELECT userID FROM users WHERE token = %s", (data["token"]))
+    userID = cur.fetchall()[0][0]
+    cur.execute("UPDATE league_teams SET teamID = NULL WHERE userID = %s and leagueID = %s", (userID, data["leagueID"]))
+    conn.commit()
+
+    return jsonify(nothing="") 
 
 if __name__ == "__main__":
     app.run(debug=True)
